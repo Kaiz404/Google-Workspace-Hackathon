@@ -12,6 +12,9 @@
 // change qty and create a record of it
 // pushes change online
 
+const MainInventorySheetName = 'Inventory';
+const SalesRecordSheetName = 'Sales Record';
+
 function onOpen() {
   SpreadsheetApp.getUi() // Or DocumentApp or SlidesApp or FormApp.
       .createMenu('Inventory Syncer')
@@ -24,31 +27,51 @@ function onOpen() {
 
 function syncFromPlatforms() {
   // call api
+  const data = getShoppeeOrderDetails().response;
+  console.log(data);
   // parse response
-  
+  // var json = response.getContentText();
+  // var data = JSON.parse(json);
+  // console.log(JSON.stringify(data));
 
-  // for order in orders
+  for (const order of data.order_list){
+    const platform = 'Shopee';
+    const buyerName = order.buyer_username;
+    const orderID = order.order_sn;
+    var items = [];
+
+    order.item_list.forEach(item => {
+      items.push({
+        itemName: item.model_name,
+        quantity: item.model_quantity_purchased
+      })
+    });
     createSaleRecord(platform, buyerName, orderID, items);
-    // for item in items
-      reduceStock(itemName, reduceQTY);
-  
+  }
 }
 
-function syncUp() {
+function syncStockToPlatForms() {
 
 }
 
 function openSaleForm() {
+  var html = HtmlService.createHtmlOutputFromFile('SalesForm')
+      .setTitle('My custom sidebar');
+  SpreadsheetApp.getUi().showSidebar(html);
   // handle html here
 
 
   // for order in orders
-    createSaleRecord(platform, buyerName, orderID, items);
+    //createSaleRecord(platform, buyerName, orderID, items);
     // for item in items
-      reduceStock(itemName, reduceQTY);
+      //reduceStock(itemName, reduceQTY);
 }
 
 function createSaleRecord(platform, orderID, buyerName, itemList) {
+  if (validateItems(itemList) == false) {
+    return
+  }
+
   console.log(itemList);
   var sheet = SpreadsheetApp.getActive().getSheetByName('Sales Record');
   var headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
@@ -92,6 +115,27 @@ function createSaleRecord(platform, orderID, buyerName, itemList) {
   }
 }
 
+function validateItems(itemList) {
+  var sheet = SpreadsheetApp.getActive().getSheetByName('Inventory');
+  var headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  var itemNameColumnIndex = headerRow.indexOf('Item Name');
+  var table = sheet.getRange(2, 1, sheet.getLastRow()-1, sheet.getLastColumn());
+  
+  var inventoryItems = [];
+
+  for (var i=1; i<=table.getValues().length; i++){
+    inventoryItems.push(table.getCell(i, itemNameColumnIndex+1).getDisplayValue());
+  }
+
+  for (const item of itemList){
+    if (inventoryItems.indexOf(item.itemName) < 0){
+      SpreadsheetApp.getUi().alert('ERROR: ' + item.itemName + ' does not exist in the inventory');
+      return false;
+    }
+  }
+  return true;
+}
+
 function openRestockForm() {
   // handle html here
 
@@ -129,9 +173,6 @@ function changeStock(itemName, quantity, isSale) {
   var itemNameColumnIndex = headerRow.indexOf('Item Name');
   var quantityColumnIndex = headerRow.indexOf('QTY');
 
-  console.log('itemNameColumnIndex: ' + itemNameColumnIndex);
-  console.log('quantityColumnIndex: ' + quantityColumnIndex);
-
   var table = sheet.getRange(2, 1, sheet.getLastRow()-1, sheet.getLastColumn());
 
   for (var i=1; i<=table.getValues().length; i++){
@@ -156,16 +197,13 @@ function changeStock(itemName, quantity, isSale) {
 }
 
 function getItemStock(itemName) {
-  var sheet = SpreadsheetApp.getActive().getSheetByName('Inventory');
+  var sheet = SpreadsheetApp.getActive().getSheetByName(MainInventorySheetName);
   var headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
 
   console.log('headerRow: ' + headerRow);
 
   var itemNameColumnIndex = headerRow.indexOf('Item Name');
   var quantityColumnIndex = headerRow.indexOf('QTY');
-
-  console.log('itemNameColumnIndex: ' + itemNameColumnIndex);
-  console.log('quantityColumnIndex: ' + quantityColumnIndex);
 
   var table = sheet.getRange(2, 1, sheet.getLastRow()-1, sheet.getLastColumn());
 
@@ -179,4 +217,20 @@ function getItemStock(itemName) {
       return originalStock;
     }
   }
+}
+
+function getAllItems(){
+  var sheet = SpreadsheetApp.getActive().getSheetByName(MainInventorySheetName);
+  var headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  var itemNameColumnIndex = headerRow.indexOf('Item Name');
+
+  var table = sheet.getRange(2, 1, sheet.getLastRow()-1, sheet.getLastColumn());
+  var items = [];
+
+  for (var i=1; i<=table.getValues().length; i++){
+    items.push(table.getCell(i, itemNameColumnIndex+1).getDisplayValue());
+  }
+  console.log(items);
+
+  return items;
 }
