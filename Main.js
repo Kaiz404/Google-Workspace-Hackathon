@@ -1,16 +1,8 @@
+// Author: Kai Zhe and Daven
 // Sync (button)
 // Pull latest sales from online and change qty in spreadsheet
 // (for now, parse sample json response and call function)
 // Sales uses sale form
-
-
-// Sale Form (Change in spreadsheet -> reduce stock on platforms, if error is encountered such as <0 stock, alert)
-// If do irl sale, just save and change qty
-// pushes change online
-
-// Restock Form (Change in spreadsheet -> increase stock on platforms)
-// change qty and create a record of it
-// pushes change online
 
 const MainInventorySheetName = 'Inventory';
 const SalesRecordSheetName = 'Sales Record';
@@ -18,10 +10,7 @@ const SalesRecordSheetName = 'Sales Record';
 function onOpen() {
   SpreadsheetApp.getUi() // Or DocumentApp or SlidesApp or FormApp.
       .createMenu('Inventory Syncer')
-      .addItem('Sync From Platforms', 'syncFromPlatforms')
-      .addItem('Open Sale Form', 'openSaleForm')
-      .addItem('Open Restock Form', 'updateItem')
-      .addItem('Test', 'test')
+      .addItem('Sync Across Platforms', 'syncAcrossPlatforms')
       .addToUi();
 }
 
@@ -42,6 +31,11 @@ function test(){
   ]
   createSaleRecord('Shopee', '2l3jk1523', 'Tim', itemList)
   // changeStock('Banana', 5, false);
+}
+
+function syncAcrossPlatforms() {
+  syncFromPlatforms();
+  syncToPlatForms();
 }
 
 function syncFromPlatforms() {
@@ -69,6 +63,6 @@ function syncFromPlatforms() {
   }
 }
 
-function syncStockToPlatForms() {
-
+function syncToPlatForms() {
+  // TODO: Implement only after successfully obtained api keys and secret of shopee/lazada
 }
